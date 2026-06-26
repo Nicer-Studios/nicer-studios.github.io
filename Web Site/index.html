@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nicer Studios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/jpeg" href="Images/Page_Logo.png">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        brandDark: '#0D1117',
+                        brandCard: '#161B22',
+                        brandBorder: '#30363D',
+                        brandTextMuted: '#8B949E'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Kartların metalik yansıma ve 3D derinlik efektleri */
+        .premium-card {
+            background: linear-gradient(135deg, #1C2128 0%, #0D1117 100%);
+            box-shadow: 10px 10px 20px rgba(0,0,0,0.5), 
+                        -5px -5px 15px rgba(255,255,255,0.02),
+                        inset 1px 1px 2px rgba(255,255,255,0.05);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease;
+            will-change: transform;
+        }
+        .premium-card:hover {
+            box-shadow: 15px 15px 30px rgba(0,0,0,0.7), 
+                        -10px -10px 20px rgba(255,255,255,0.04),
+                        inset 1px 1px 2px rgba(255,255,255,0.1);
+        }
+        /* Başlıktaki titanyum degrade efekti */
+        .metalic-text {
+            background: linear-gradient(180deg, #FFFFFF 0%, #8B949E 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Sonsuz kayma animasyonu ayarları */
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-33.333%); }
+        }
+
+        .marquee-track {
+            display: flex;
+            gap: 2rem;
+            width: max-content;
+            animation: marquee 25s linear infinite;
+        }
+
+        /* Mouse üzerindeyken akış dursun */
+        .marquee-track:hover {
+            animation-play-state: paused;
+        }
+    </style>
+</head>
+<body class="bg-brandDark text-gray-200 font-sans antialiased scroll-smooth overflow-x-hidden">
+
+    <header class="fixed top-0 left-0 w-full bg-brandDark/80 backdrop-blur-md z-50 border-b border-brandBorder">
+        <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+            
+            <a href="#" class="flex items-center gap-3 group">
+                <img src="Images/Logo.png" alt="Nicer Studios Logo" class="w-10 h-10 rounded-lg object-cover border border-brandBorder group-hover:border-brandTextMuted transition duration-300">
+                <span class="text-xl font-bold tracking-tight text-white transition duration-300">
+                    NICER <span class="text-brandTextMuted font-light">STUDIOS</span>
+                </span>
+            </a>
+
+            <nav class="hidden md:flex space-x-8 text-sm font-medium text-brandTextMuted">
+                <a href="#" class="hover:text-white transition">Ana Sayfa</a>
+                <a href="#projects" class="hover:text-white transition">Uygulamalar</a>
+                <a href="#about" class="hover:text-white transition">Hakkımızda</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="pt-44 pb-16 px-6 text-center max-w-4xl mx-auto">
+        <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight metalic-text mb-6">
+            Nicer Studios.
+        </h1>
+        <p class="text-lg md:text-xl text-brandTextMuted mb-10 max-w-xl mx-auto font-light leading-relaxed">
+            Geometrinin işlevsellikle buluştuğu, üst düzey mobil deneyimler ve araçlar tasarlıyoruz.
+        </p>
+    </section>
+
+    <section id="projects" class="py-12 w-full overflow-hidden relative">
+        
+        <div class="absolute top-0 left-0 h-full w-20 md:w-40 bg-gradient-to-r from-brandDark to-transparent z-10 pointer-events-none"></div>
+        <div class="absolute top-0 right-0 h-full w-20 md:w-40 bg-gradient-to-l from-brandDark to-transparent z-10 pointer-events-none"></div>
+
+        <div class="marquee-track" id="marqueeTrack">
+            
+            <div class="premium-card js-tilt-card rounded-xl border border-brandBorder p-8 flex flex-col justify-between h-[380px] w-[350px] shrink-0">
+                <div>
+                    <div class="w-16 h-16 bg-brandDark rounded-xl border border-brandBorder flex items-center justify-center mb-6 shadow-inner">
+                        <span class="text-2xl font-bold text-brandTextMuted">F</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">FaizMatik</h3>
+                    <p class="text-brandTextMuted text-sm leading-relaxed font-light">
+                        Finansal kararlarınızı optimize eden, sade arayüze ve yüksek hesaplama hassasiyetine sahip modern faiz hesaplama aracı.
+                    </p>
+                </div>
+                <a href="https://play.google.com/store/apps/details?id=com.nicer.studios.faizmatik&pcampaignid=web_share" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-b from-[#21262D] to-[#161B22] border border-brandBorder rounded-lg text-white text-xs font-semibold tracking-wider hover:from-[#30363D] hover:to-[#21262D] transition duration-300">
+                    GOOGLE PLAY'DE KEŞFET
+                </a>
+            </div>
+
+            <div class="premium-card js-tilt-card rounded-xl border border-brandBorder p-8 flex flex-col justify-between h-[380px] w-[350px] shrink-0">
+                <div>
+                    <div class="w-16 h-16 bg-brandDark rounded-xl border border-brandBorder flex items-center justify-center mb-6 shadow-inner">
+                        <span class="text-2xl font-bold text-brandTextMuted">H</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Helix Infinity</h3>
+                    <p class="text-brandTextMuted text-sm leading-relaxed font-light">
+                        Geometrik ve minimalist bir evrende reflekslerinizi test eden, akıcı mekaniklere sahip sonsuz koşu oyunu.
+                    </p>
+                </div>
+                <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-b from-[#21262D] to-[#161B22] border border-brandBorder rounded-lg text-white text-xs font-semibold tracking-wider hover:from-[#30363D] hover:to-[#21262D] transition duration-300">
+                    GOOGLE PLAY'DE KEŞFET
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    <section id="about" class="py-24 max-w-4xl mx-auto px-6 text-center border-t border-brandBorder/40 mt-16">
+        <h2 class="text-xl font-bold text-white mb-4 tracking-wide">STÜDYO</h2>
+        <p class="text-brandTextMuted font-light leading-relaxed max-w-2xl mx-auto text-sm md:text-base">
+            Nicer Studios, kusursuz mobil araçlar ve yapısal arcade simülasyonları geliştirmeye adanmış bağımsız bir yazılım laboratuvarıdır. Görsel disipline, donanım optimizasyonuna ve temiz kullanıcı deneyimine inanıyoruz.
+        </p>
+
+        <p class="text-brandTextMuted font-light leading-relaxed max-w-2xl mx-auto text-sm md:text-base">
+            Nicer than yesterday.
+        </p>
+    </section>
+
+    <footer class="py-10 text-center text-xs text-brandTextMuted border-t border-brandBorder/30">
+        <p>&copy; 2026 Nicer Studios. Kusursuz Mühendislik.</p>
+    </footer>
+
+    <script>
+        const track = document.getElementById('marqueeTrack');
+        
+        // Pürüzsüz sonsuz döngü için mevcut kartları şeride iki kez klonluyoruz
+        const originalCards = Array.from(track.children);
+        for (let i = 0; i < 2; i++) {
+            originalCards.forEach(card => {
+                const clone = card.cloneNode(true);
+                track.appendChild(clone);
+            });
+        }
+
+        // Yenilenen tüm kartlara (klonlar dahil) 3D Tilt hareketini bağlıyoruz
+        const allCards = document.querySelectorAll('.js-tilt-card');
+        allCards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left; 
+                const y = e.clientY - rect.top; 
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = ((centerY - y) / centerY) * 8;
+                const rotateY = ((x - centerX) / centerX) * 8;
+                
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                card.style.borderColor = '#8B949E';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+                card.style.borderColor = '#30363D';
+            });
+        });
+    </script>
+</body>
+</html>
