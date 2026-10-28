@@ -260,6 +260,11 @@
            bir renk yaz, örn. '#d7dde4' (gümüş) ya da '#ffffff' (beyaz). */
         const LOGO_COLOR = null;
 
+        /* Başlangıç bakış açısı (radyan) ve dönme ayarı */
+        const START_AZIMUTH = 0.45;     // + : sağdan bakış, - : soldan bakış
+        const START_ELEVATION = -0.3;   // - : hafif alttan bakış, + : yukarıdan bakış
+        const AUTO_ROTATE = false;      // true yaparsan logo kendi kendine yavaşça döner
+
         const wrap = document.getElementById('logo3dWrap');
         const box = document.getElementById('logo3d');
 
@@ -304,10 +309,10 @@
             scene.add(rim);
 
             const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 50);
-            camera.position.set(0, 0.15, 3.9);
+            camera.position.setFromSphericalCoords(3.9, Math.PI / 2 - START_ELEVATION, START_AZIMUTH);
+            camera.lookAt(0, 0, 0);
 
             const holder = new THREE.Group();
-            holder.rotation.y = -0.45;
             scene.add(holder);
 
             new GLTFLoader().parse(b64ToBuf(LOGO_GLB_BASE64), '', gltf => {
@@ -325,14 +330,14 @@
             controls.minPolarAngle = Math.PI / 2 - 0.55;
             controls.maxPolarAngle = Math.PI / 2 + 0.55;
             const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            controls.autoRotate = !reduce;
+            controls.autoRotate = AUTO_ROTATE && !reduce;
             controls.autoRotateSpeed = 1.6;
             // Telefonda dikey kaydırma sayfayı kaydırsın, yatay sürükleme logoyu döndürsün
             renderer.domElement.style.touchAction = 'pan-y';
 
             let idle;
             controls.addEventListener('start', () => { controls.autoRotate = false; clearTimeout(idle); });
-            controls.addEventListener('end', () => { idle = setTimeout(() => { controls.autoRotate = !reduce; }, 2500); });
+            controls.addEventListener('end', () => { idle = setTimeout(() => { controls.autoRotate = AUTO_ROTATE && !reduce; }, 2500); });
 
             const resize = () => {
                 const w = box.clientWidth || 1, h = box.clientHeight || 1;
