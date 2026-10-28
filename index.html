@@ -18,6 +18,14 @@
     <meta property="twitter:image" content="https://nicerstudios.com/Page_Logo.png">
     <title>Nicer Studios</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700;800&display=swap" rel="stylesheet">
@@ -59,6 +67,14 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
+        /* 3D logo alanı */
+        #logo3d {
+            background: radial-gradient(ellipse at center, rgba(170,180,195,0.30) 0%, rgba(139,148,158,0.10) 45%, transparent 70%);
+            cursor: grab;
+        }
+        #logo3d:active { cursor: grabbing; }
+        #logo3d canvas { display: block; width: 100%; height: 100%; }
 
         @keyframes marquee {
             0% { transform: translateX(0); }
@@ -174,6 +190,12 @@
     </section>
 
     <section id="about" class="py-24 max-w-4xl mx-auto px-6 text-center border-t border-brandBorder/40 mt-16">
+        <!-- 3D LOGO: JS başarıyla çalışırsa görünür, çalışmazsa hiç yer kaplamaz -->
+        <div id="logo3dWrap" class="hidden mb-10">
+            <div id="logo3d" class="mx-auto w-full max-w-sm h-64 md:h-72"></div>
+            <p class="text-[11px] tracking-[0.25em] text-brandTextMuted/70 uppercase mt-1">&#10227; Sürükleyerek döndür</p>
+        </div>
+
         <h2 class="text-xl font-bold text-white mb-4 tracking-wide">STÜDYO</h2>
         <p class="text-brandTextMuted font-light leading-relaxed max-w-2xl mx-auto text-sm md:text-base">
             Nicer Studios, kusursuz mobil araçlar ve yapısal arcade simülasyonları geliştirmeye adanmış bağımsız bir yazılım laboratuvarıdır. Görsel disipline, donanım optimizasyonuna ve temiz kullanıcı deneyimine inanıyoruz.
@@ -223,6 +245,117 @@
                 card.style.borderColor = '#30363D';
             });
         });
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        /* Nicer Studios N logosu (senin FBX tasarımın, GLB'ye çevrilip buraya gömüldü).
+           Yeni bir tasarım olunca bu uzun metin değiştirilir. */
+        const LOGO_GLB_BASE64 = "Z2xURgIAAADMJQAAUAcAAEpTT057ImFzc2V0Ijp7InZlcnNpb24iOiIyLjAiLCJnZW5lcmF0b3IiOiJqdWFkaXMtZmJ4LWNvbnZlcnQifSwic2NlbmUiOjAsInNjZW5lcyI6W3sibm9kZXMiOlswLDEsMl19XSwibm9kZXMiOlt7Im5hbWUiOiJCb2R5MSIsIm1lc2giOjB9LHsibmFtZSI6IkJvZHkyIiwibWVzaCI6MX0seyJuYW1lIjoiQm9keTMiLCJtZXNoIjoyfV0sIm1lc2hlcyI6W3sibmFtZSI6IkJvZHkxIiwicHJpbWl0aXZlcyI6W3siYXR0cmlidXRlcyI6eyJQT1NJVElPTiI6MCwiTk9STUFMIjoxfSwibWF0ZXJpYWwiOjAsIm1vZGUiOjR9XX0seyJuYW1lIjoiQm9keTIiLCJwcmltaXRpdmVzIjpbeyJhdHRyaWJ1dGVzIjp7IlBPU0lUSU9OIjoyLCJOT1JNQUwiOjN9LCJtYXRlcmlhbCI6MCwibW9kZSI6NH1dfSx7Im5hbWUiOiJCb2R5MyIsInByaW1pdGl2ZXMiOlt7ImF0dHJpYnV0ZXMiOnsiUE9TSVRJT04iOjQsIk5PUk1BTCI6NX0sIm1hdGVyaWFsIjowLCJtb2RlIjo0fV19XSwibWF0ZXJpYWxzIjpbeyJuYW1lIjoiTWFyYmxlIChXaGl0ZSkiLCJwYnJNZXRhbGxpY1JvdWdobmVzcyI6eyJiYXNlQ29sb3JGYWN0b3IiOlswLjAsMC4wLDAuMCwxLjBdLCJtZXRhbGxpY0ZhY3RvciI6MC4wLCJyb3VnaG5lc3NGYWN0b3IiOjAuNDJ9LCJkb3VibGVTaWRlZCI6ZmFsc2V9XSwiYWNjZXNzb3JzIjpbeyJidWZmZXJWaWV3IjowLCJjb21wb25lbnRUeXBlIjo1MTI2LCJjb3VudCI6MTgwLCJ0eXBlIjoiVkVDMyIsIm1pbiI6Wy0wLjY3NzA4NzcyNDIwODgzMTgsLTAuODAwMDAwMDExOTIwOTI5LC0wLjExNTMwNzM0NTk4NjM2NjI3XSwibWF4IjpbMC42NzU0MTIyMzc2NDQxOTU2LDAuNzk5NTM5ODY0MDYzMjYyOSwwLjExNTMwNzM0NTk4NjM2NjI3XX0seyJidWZmZXJWaWV3IjoxLCJjb21wb25lbnRUeXBlIjo1MTI2LCJjb3VudCI6MTgwLCJ0eXBlIjoiVkVDMyJ9LHsiYnVmZmVyVmlldyI6MiwiY29tcG9uZW50VHlwZSI6NTEyNiwiY291bnQiOjcyLCJ0eXBlIjoiVkVDMyIsIm1pbiI6Wy0wLjY4MDUyMzc1MzE2NjE5ODcsLTAuNzk5NTg1ODc4ODQ5MDI5NSwtMC4xMTUzMDczNDU5ODYzNjYyN10sIm1heCI6Wy0wLjI3OTUwMjcxOTY0MDczMTgsLTAuMzgxODkwMjY3MTMzNzEyNzcsMC4xMTUzMDczNDU5ODYzNjYyN119LHsiYnVmZmVyVmlldyI6MywiY29tcG9uZW50VHlwZSI6NTEyNiwiY291bnQiOjcyLCJ0eXBlIjoiVkVDMyJ9LHsiYnVmZmVyVmlldyI6NCwiY29tcG9uZW50VHlwZSI6NTEyNiwiY291bnQiOjcyLCJ0eXBlIjoiVkVDMyIsIm1pbiI6WzAuMjg1NzQyMDc0MjUxMTc0OSwwLjIzMDQ5MzA1Mzc5MzkwNzE3LC0wLjExNTMwNzM0NTk4NjM2NjI3XSwibWF4IjpbMC42ODA1MjM3NTMxNjYxOTg3LDAuODAwMDAwMDExOTIwOTI5LDAuMTE1MzA3MzQ1OTg2MzY2MjddfSx7ImJ1ZmZlclZpZXciOjUsImNvbXBvbmVudFR5cGUiOjUxMjYsImNvdW50Ijo3MiwidHlwZSI6IlZFQzMifV0sImJ1ZmZlclZpZXdzIjpbeyJidWZmZXIiOjAsImJ5dGVPZmZzZXQiOjAsImJ5dGVMZW5ndGgiOjIxNjAsInRhcmdldCI6MzQ5NjJ9LHsiYnVmZmVyIjowLCJieXRlT2Zmc2V0IjoyMTYwLCJieXRlTGVuZ3RoIjoyMTYwLCJ0YXJnZXQiOjM0OTYyfSx7ImJ1ZmZlciI6MCwiYnl0ZU9mZnNldCI6NDMyMCwiYnl0ZUxlbmd0aCI6ODY0LCJ0YXJnZXQiOjM0OTYyfSx7ImJ1ZmZlciI6MCwiYnl0ZU9mZnNldCI6NTE4NCwiYnl0ZUxlbmd0aCI6ODY0LCJ0YXJnZXQiOjM0OTYyfSx7ImJ1ZmZlciI6MCwiYnl0ZU9mZnNldCI6NjA0OCwiYnl0ZUxlbmd0aCI6ODY0LCJ0YXJnZXQiOjM0OTYyfSx7ImJ1ZmZlciI6MCwiYnl0ZU9mZnNldCI6NjkxMiwiYnl0ZUxlbmd0aCI6ODY0LCJ0YXJnZXQiOjM0OTYyfV0sImJ1ZmZlcnMiOlt7ImJ5dGVMZW5ndGgiOjc3NzZ9XX1gHgAAQklOAOm/LD/NzEy/QibsPem/LD/NzEy/Qibsvd3TLD9mvO2+AAAAAN3TLD9mvO2+AAAAAOm/LD/NzEy/QibsvdHnLD9jvgO+Qibsvd3TLD9mvO2+AAAAANHnLD9jvgO+QibsvdHnLD9jvgO+QibsPdHnLD9jvgO+QibsPem/LD/NzEy/QibsPd3TLD9mvO2+AAAAAE2IXz6psUy/QibsPU2IXz6psUy/Qibsvfyh5D47v0y/AAAAAPyh5D47v0y/AAAAAE2IXz6psUy/Qibsvem/LD/NzEy/Qibsvfyh5D47v0y/AAAAAOm/LD/NzEy/Qibsvem/LD/NzEy/QibsPem/LD/NzEy/QibsPU2IXz6psUy/QibsPfyh5D47v0y/AAAAACPpk75HXw09QibsPSPpk75HXw09QibsvfKTEL2128O+126dI/KTEL2128O+126dIyPpk75HXw09QibsvU2IXz6psUy/QibsvfKTEL2128O+126dI02IXz6psUy/QibsvU2IXz6psUy/QibsPU2IXz6psUy/QibsPSPpk75HXw09QibsPfKTEL2128O+126dI4n/k766jh2+QibsPYn/k766jh2+QibsvVb0k77RbXS9AAAAAFb0k77RbXS9AAAAAIn/k766jh2+QibsvSPpk75HXw09QibsvVb0k77RbXS9AAAAACPpk75HXw09QibsvSPpk75HXw09QibsPSPpk75HXw09QibsPYn/k766jh2+QibsPVb0k77RbXS9AAAAAJ9VLb+x/ue+QibsPZ9VLb+x/ue+QibsvWNV974HY5u+AAAAAGNV974HY5u+AAAAAJ9VLb+x/ue+QibsvYn/k766jh2+QibsvWNV974HY5u+AAAAAIn/k766jh2+QibsvYn/k766jh2+QibsPYn/k766jh2+QibsPZ9VLb+x/ue+QibsPWNV974HY5u+AAAAACcLLb+lrkw/QibsPScLLb+lrkw/QibsvWMwLb+YXjE+AAAAAGMwLb+YXjE+AAAAACcLLb+lrkw/QibsvZ9VLb+x/ue+QibsvWMwLb+YXjE+AAAAAJ9VLb+x/ue+QibsvZ9VLb+x/ue+QibsPZ9VLb+x/ue+QibsPScLLb+lrkw/QibsPWMwLb+YXjE+AAAAAH3ojr4Nl0w/QibsPX3ojr4Nl0w/QibsvWZ/9L7Zokw/126dI2Z/9L7Zokw/126dI33ojr4Nl0w/QibsvScLLb+lrkw/QibsvWZ/9L7Zokw/126dIycLLb+lrkw/QibsvScLLb+lrkw/QibsPScLLb+lrkw/QibsPX3ojr4Nl0w/QibsPWZ/9L7Zokw/126dI8lMkj5+sRO+QibsPclMkj5+sRO+QibsvTcTWTuuqqc+126dIzcTWTuuqqc+126dI8lMkj5+sRO+QibsvX3ojr4Nl0w/QibsvTcTWTuuqqc+126dI33ojr4Nl0w/QibsvX3ojr4Nl0w/QibsPX3ojr4Nl0w/QibsPclMkj5+sRO+QibsPTcTWTuuqqc+126dI419kj67J4g+QibsPY19kj67J4g+QibsvStlkj7xO3k9AAAAACtlkj7xO3k9AAAAAI19kj67J4g+QibsvclMkj5+sRO+QibsvStlkj7xO3k9AAAAAMlMkj5+sRO+QibsvclMkj5+sRO+QibsPclMkj5+sRO+QibsPY19kj67J4g+QibsPStlkj7xO3k9AAAAANHnLD9jvgO+QibsPdHnLD9jvgO+QibsvZgm9j4TkYw9AAAAAJgm9j4TkYw9AAAAANHnLD9jvgO+QibsvY19kj67J4g+QibsvZgm9j4TkYw9AAAAAI19kj67J4g+QibsvY19kj67J4g+QibsPY19kj67J4g+QibsPdHnLD9jvgO+QibsPZgm9j4TkYw9AAAAAI19kj67J4g+QibsPclMkj5+sRO+QibsPdHnLD9jvgO+QibsPdHnLD9jvgO+QibsPclMkj5+sRO+QibsPem/LD/NzEy/QibsPem/LD/NzEy/QibsPclMkj5+sRO+QibsPU2IXz6psUy/QibsPU2IXz6psUy/QibsPclMkj5+sRO+QibsPWiaW7ocQXG5QibsPU2IXz6psUy/QibsPWiaW7ocQXG5QibsPSPpk75HXw09QibsPSPpk75HXw09QibsPWiaW7ocQXG5QibsPX3ojr4Nl0w/QibsPSPpk75HXw09QibsPX3ojr4Nl0w/QibsPScLLb+lrkw/QibsPclMkj5+sRO+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AAAAAGE8Nj9qyzM/AAAAAGE8Nj9qyzM/AAAAAGE8Nj9qyzM/AAAAAGE8Nj9qyzM/AAAAAGE8Nj9qyzM/AAAAAGE8Nj9qyzM/AAAAAGE8Nj9qyzM/AAAAAGE8Nj9qyzM/AAAAAAAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAv842Lr+psUy/QibsPc42Lr+psUy/QibsvUvE9b6psUy/AAAAAEvE9b6psUy/AAAAAM42Lr+psUy/Qibsvfsaj76psUy/QibsvUvE9b6psUy/AAAAAPsaj76psUy/Qibsvfsaj76psUy/QibsPfsaj76psUy/QibsPc42Lr+psUy/QibsPUvE9b6psUy/AAAAAM42Lr9IpTO/QibsPc42Lr9IpTO/Qibsvc42Lr95K0C/AAAAAM42Lr95K0C/AAAAAM42Lr9IpTO/Qibsvc42Lr+psUy/Qibsvc42Lr95K0C/AAAAAM42Lr+psUy/Qibsvc42Lr+psUy/QibsPc42Lr+psUy/QibsPc42Lr9IpTO/QibsPc42Lr95K0C/AAAAAHP+j74fh8O+QibsPXP+j74fh8O+QibsvQc29r5stAq/126dIwc29r5stAq/126dI3P+j74fh8O+Qibsvc42Lr9IpTO/QibsvQc29r5stAq/126dI842Lr9IpTO/Qibsvc42Lr9IpTO/QibsPc42Lr9IpTO/QibsPXP+j74fh8O+QibsPQc29r5stAq/126dI/saj76psUy/QibsPfsaj76psUy/QibsvbeMj76cOhe/126dI7eMj76cOhe/126dI/saj76psUy/QibsvXP+j74fh8O+QibsvbeMj76cOhe/126dI3P+j74fh8O+QibsvXP+j74fh8O+QibsPXP+j74fh8O+QibsPfsaj76psUy/QibsPbeMj76cOhe/126dI842Lr+psUy/QibsPfsaj76psUy/QibsPUvE9b6cOhe/QibsPUvE9b6cOhe/QibsPfsaj76psUy/QibsPXP+j74fh8O+QibsPUvE9b6cOhe/QibsPXP+j74fh8O+QibsPc42Lr9IpTO/QibsPc42Lr9IpTO/QibsPc42Lr+psUy/QibsPUvE9b6cOhe/QibsPc42Lr9IpTO/QibsvXP+j74fh8O+QibsvUvE9b6cOhe/QibsvUvE9b6cOhe/QibsvXP+j74fh8O+Qibsvfsaj76psUy/QibsvUvE9b6cOhe/Qibsvfsaj76psUy/Qibsvc42Lr+psUy/Qibsvc42Lr+psUy/Qibsvc42Lr9IpTO/QibsvUvE9b6cOhe/QibsvQAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAPgMIL+jzEc/c07JofgMIL+jzEc/c07JofgMIL+jzEc/4J6DpfgMIL+jzEc/4J6DpfgMIL+jzEc/c07JofgMIL+jzEc/OToDpvgMIL+jzEc/4J6DpfgMIL+jzEc/OToDpvgMIL+jzEc/OToDpvgMIL+jzEc/OToDpvgMIL+jzEc/c07JofgMIL+jzEc/4J6DpW//fz+rJIg7DHPRnW//fz+rJIg7DHPRnW//fz+rJIg7d+tfoW//fz+rJIg7d+tfoW//fz+rJIg7DHPRnW//fz+rJIg7BBrfoW//fz+rJIg7d+tfoW//fz+rJIg7BBrfoW//fz+rJIg7BBrfoW//fz+rJIg7BBrfoW//fz+rJIg7DHPRnW//fz+rJIg7d+tfoQAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvzT1LT9fBmw+QibsPTT1LT9fBmw+QibsvQEWLj8y5wM/AAAAAAEWLj8y5wM/AAAAADT1LT9fBmw+Qibsvc42Lj/NzEw/QibsvQEWLj8y5wM/AAAAAM42Lj/NzEw/Qibsvc42Lj/NzEw/QibsPc42Lj/NzEw/QibsPTT1LT9fBmw+QibsPQEWLj8y5wM/AAAAAFGukj4siB4/QibsPVGukj4siB4/QibsvV1M9z7Eidk+126dI11M9z7Eidk+126dI1Gukj4siB4/QibsvTT1LT9fBmw+QibsvV1M9z7Eidk+126dIzT1LT9fBmw+QibsvTT1LT9fBmw+QibsPTT1LT9fBmw+QibsPVGukj4siB4/QibsPV1M9z7Eidk+126dI8lMkj5OYUw/QibsPclMkj5OYUw/QibsvY19kj69dDU/126dI419kj69dDU/126dI8lMkj5OYUw/QibsvVGukj4siB4/QibsvY19kj69dDU/126dI1Gukj4siB4/QibsvVGukj4siB4/QibsPVGukj4siB4/QibsPclMkj5OYUw/QibsPY19kj69dDU/126dI842Lj/NzEw/QibsPc42Lj/NzEw/QibsvTJd9z4Nl0w/126dIzJd9z4Nl0w/126dI842Lj/NzEw/QibsvclMkj5OYUw/QibsvTJd9z4Nl0w/126dI8lMkj5OYUw/QibsvclMkj5OYUw/QibsPclMkj5OYUw/QibsPc42Lj/NzEw/QibsPTJd9z4Nl0w/126dIzT1LT9fBmw+QibsPc42Lj/NzEw/QibsPTJd9z4y5wM/QibsPTJd9z4y5wM/QibsPc42Lj/NzEw/QibsPclMkj5OYUw/QibsPTJd9z4y5wM/QibsPclMkj5OYUw/QibsPVGukj4siB4/QibsPVGukj4siB4/QibsPTT1LT9fBmw+QibsPTJd9z4y5wM/QibsPVGukj4siB4/QibsvclMkj5OYUw/QibsvTJd9z4y5wM/QibsvTJd9z4y5wM/QibsvclMkj5OYUw/Qibsvc42Lj/NzEw/QibsvTJd9z4y5wM/Qibsvc42Lj/NzEw/QibsvTT1LT9fBmw+QibsvTT1LT9fBmw+QibsvVGukj4siB4/QibsvTJd9z4y5wM/Qibsveb/fz8AX+a6KLaQoeb/fz8AX+a6KLaQoeb/fz8AX+a6p4ZSpeb/fz8AX+a6p4ZSpeb/fz8AX+a6KLaQoeb/fz8AX+a68fXRpeb/fz8AX+a6p4ZSpeb/fz8AX+a68fXRpeb/fz8AX+a68fXRpeb/fz8AX+a68fXRpeb/fz8AX+a6KLaQoeb/fz8AX+a6p4ZSpYEHNL8EATa/iPBToYEHNL8EATa/iPBToYEHNL8EATa/oKwVpYEHNL8EATa/oKwVpYEHNL8EATa/iPBToYEHNL8EATa/qEKVpYEHNL8EATa/oKwVpYEHNL8EATa/qEKVpYEHNL8EATa/qEKVpYEHNL8EATa/qEKVpYEHNL8EATa/iPBToYEHNL8EATa/oKwVpW//f7+rJIi7AAAAAG//f7+rJIi7AAAAAG//f7+rJIi7AAAAAG//f7+rJIi7AAAAAG//f7+rJIi7AAAAAG//f7+rJIi7AAAAAG//f7+rJIi7AAAAAG//f7+rJIi7AAAAAG//f7+rJIi7AAAAAG//f7+rJIi7AAAAAG//f7+rJIi7AAAAAG//f7+rJIi7AAAAAKskiLtv/38/FtRPIqskiLtv/38/FtRPIqskiLtv/38/UBbSJaskiLtv/38/UBbSJaskiLtv/38/FtRPIqskiLtv/38/fEZRJqskiLtv/38/UBbSJaskiLtv/38/fEZRJqskiLtv/38/fEZRJqskiLtv/38/fEZRJqskiLtv/38/FtRPIqskiLtv/38/UBbSJQAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvwAAAAAAAAAAAACAvw==";
+
+        /* null = tasarımındaki renk (siyah). Siyah koyu zeminde silik kalırsa buraya
+           bir renk yaz, örn. '#d7dde4' (gümüş) ya da '#ffffff' (beyaz). */
+        const LOGO_COLOR = null;
+
+        const wrap = document.getElementById('logo3dWrap');
+        const box = document.getElementById('logo3d');
+
+        function b64ToBuf(b64) {
+            const bin = atob(b64), u = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+            return u.buffer;
+        }
+
+        // Parlak (piyano siyahı / cilalı metal) yüzey: çevre yansımaları şekli belli eder
+        function finish(root) {
+            root.traverse(o => {
+                if (!o.isMesh) return;
+                const old = o.material;
+                o.material = new THREE.MeshPhysicalMaterial({
+                    color: LOGO_COLOR ? new THREE.Color(LOGO_COLOR) : old.color.clone(),
+                    metalness: LOGO_COLOR ? 0.9 : 0.0,
+                    roughness: LOGO_COLOR ? 0.28 : 0.16,
+                    clearcoat: 1, clearcoatRoughness: 0.06,
+                    envMapIntensity: 1.5
+                });
+            });
+        }
+
+        function init() {
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+            wrap.classList.remove('hidden');
+            box.appendChild(renderer.domElement);
+
+            const scene = new THREE.Scene();
+            const pmrem = new THREE.PMREMGenerator(renderer);
+            scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+            const key = new THREE.DirectionalLight(0xffffff, 1.3);
+            key.position.set(3, 4, 5);
+            scene.add(key);
+            const rim = new THREE.DirectionalLight(0xbfd2ff, 1.6);   // arkadan kenar ışığı
+            rim.position.set(-4, 2, -3);
+            scene.add(rim);
+
+            const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 50);
+            camera.position.set(0, 0.15, 3.9);
+
+            const holder = new THREE.Group();
+            holder.rotation.y = -0.45;
+            scene.add(holder);
+
+            new GLTFLoader().parse(b64ToBuf(LOGO_GLB_BASE64), '', gltf => {
+                finish(gltf.scene);
+                holder.add(gltf.scene);
+            }, err => {
+                console.error('3D logo yüklenemedi:', err);
+                wrap.classList.add('hidden');
+            });
+
+            const controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableZoom = false;
+            controls.enablePan = false;
+            controls.enableDamping = true;
+            controls.minPolarAngle = Math.PI / 2 - 0.55;
+            controls.maxPolarAngle = Math.PI / 2 + 0.55;
+            const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            controls.autoRotate = !reduce;
+            controls.autoRotateSpeed = 1.6;
+            // Telefonda dikey kaydırma sayfayı kaydırsın, yatay sürükleme logoyu döndürsün
+            renderer.domElement.style.touchAction = 'pan-y';
+
+            let idle;
+            controls.addEventListener('start', () => { controls.autoRotate = false; clearTimeout(idle); });
+            controls.addEventListener('end', () => { idle = setTimeout(() => { controls.autoRotate = !reduce; }, 2500); });
+
+            const resize = () => {
+                const w = box.clientWidth || 1, h = box.clientHeight || 1;
+                renderer.setSize(w, h, false);
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+            };
+            new ResizeObserver(resize).observe(box);
+            resize();
+
+            // Ekranda görünmüyorken çizimi durdur (pil ve performans)
+            let visible = true;
+            new IntersectionObserver(e => { visible = e[0].isIntersecting; }, { rootMargin: '80px' }).observe(box);
+
+            (function loop() {
+                requestAnimationFrame(loop);
+                if (!visible) return;
+                controls.update();
+                renderer.render(scene, camera);
+            })();
+        }
+
+        try { init(); } catch (e) { console.error('3D logo başlatılamadı:', e); wrap.classList.add('hidden'); }
     </script>
 </body>
 </html>
