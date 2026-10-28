@@ -261,9 +261,10 @@
         const LOGO_COLOR = null;
 
         /* Başlangıç bakış açısı (radyan) ve dönme ayarı */
-        const START_AZIMUTH = 0.45;     // + : sağdan bakış, - : soldan bakış
-        const START_ELEVATION = -0.3;   // - : hafif alttan bakış, + : yukarıdan bakış
-        const AUTO_ROTATE = false;      // true yaparsan logo kendi kendine yavaşça döner
+        const START_AZIMUTH = 0;     // + : sağdan bakış, - : soldan bakış
+        const START_ELEVATION = -0.5;   // - : hafif alttan bakış, + : yukarıdan bakış
+        const AUTO_ROTATE = true;      // true yaparsan logo kendi kendine yavaşça döner
+        const LIGHT_FROM_RIGHT = true;  // true: ışık sağ üstten, false: sol üstten gelir
 
         const wrap = document.getElementById('logo3dWrap');
         const box = document.getElementById('logo3d');
@@ -299,13 +300,17 @@
 
             const scene = new THREE.Scene();
             const pmrem = new THREE.PMREMGenerator(renderer);
-            scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+            // Parlak yüzeyde ışığı çevre yansıması belirler; sağ-sol aynalayarak ışığı sağdan getiriyoruz
+            const envScene = new THREE.Scene();
+            envScene.add(new RoomEnvironment());
+            if (LIGHT_FROM_RIGHT) envScene.scale.x = -1;
+            scene.environment = pmrem.fromScene(envScene, 0.04).texture;
 
             const key = new THREE.DirectionalLight(0xffffff, 1.3);
-            key.position.set(3, 4, 5);
+            key.position.set(LIGHT_FROM_RIGHT ? 4 : -4, 5, 4);
             scene.add(key);
             const rim = new THREE.DirectionalLight(0xbfd2ff, 1.6);   // arkadan kenar ışığı
-            rim.position.set(-4, 2, -3);
+            rim.position.set(LIGHT_FROM_RIGHT ? -4 : 4, 2, -3);
             scene.add(rim);
 
             const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 50);
